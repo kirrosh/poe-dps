@@ -34,10 +34,6 @@ function parseWeaponData(input: string): WeaponData | null {
     const currentAverageDamage = (currentMinDamage + currentMaxDamage) / 2;
     const currentDps = currentAverageDamage * attackSpeed;
 
-    // Базовый DPS без учёта качества
-    const baseAverageDamage = (baseMinDamage + baseMaxDamage) / 2;
-    const baseDps = baseAverageDamage * attackSpeed;
-
     // DPS при максимальном качестве (+20%)
     const maxQualityMultiplier = 1.2;
     const maxMinDamage = baseMinDamage * maxQualityMultiplier;
