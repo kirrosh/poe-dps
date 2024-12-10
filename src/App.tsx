@@ -3,6 +3,8 @@ import { createSignal } from "solid-js";
 interface WeaponData {
   baseMinDamage: number;
   baseMaxDamage: number;
+  elementalMinDamage: number;
+  elementalMaxDamage: number;
   attackSpeed: number;
   quality: number;
   currentDps: number;
@@ -10,12 +12,14 @@ interface WeaponData {
 }
 
 function parseWeaponData(input: string): WeaponData | null {
-  // Шаблоны для поиска параметров
   const damagePattern = /Physical Damage:\s*(\d+)-(\d+)/;
+  const elementalPattern =
+    /Elemental Damage:\s*((?:\d+-\d+(?:\s*\([^)]+\))?(?:,\s*)?)+)/;
   const attackSpeedPattern = /Attacks per Second:\s*([\d.]+)/;
   const qualityPattern = /Quality:\s*\+(\d+)%/;
 
   const damageMatch = input.match(damagePattern);
+  const elementalMatch = input.match(elementalPattern);
   const attackSpeedMatch = input.match(attackSpeedPattern);
   const qualityMatch = input.match(qualityPattern);
 
@@ -25,33 +29,60 @@ function parseWeaponData(input: string): WeaponData | null {
     const attackSpeed = parseFloat(attackSpeedMatch[1]);
     const quality = qualityMatch ? parseInt(qualityMatch[1], 10) : 0;
 
+    // Парсинг элементального урона
+    let elementalMinDamage = 0;
+    let elementalMaxDamage = 0;
+
+    if (elementalMatch) {
+      const elementalDamages = elementalMatch[1]
+        .split(",")
+        .map((s) => s.trim());
+      elementalDamages.forEach((damage) => {
+        const [min, max] = damage
+          .match(/(\d+)-(\d+)/)!
+          .slice(1, 3)
+          .map(Number);
+        elementalMinDamage += min;
+        elementalMaxDamage += max;
+      });
+    }
+
+    // Общий урон (физический + элементальный)
+    const totalCurrentMinDamage = currentMinDamage + elementalMinDamage;
+    const totalCurrentMaxDamage = currentMaxDamage + elementalMaxDamage;
+
     // Убираем влияние качества, чтобы найти базовый урон
     const qualityMultiplier = 1 + quality / 100;
-    const baseMinDamage = currentMinDamage / qualityMultiplier;
-    const baseMaxDamage = currentMaxDamage / qualityMultiplier;
+    const baseMinDamage = totalCurrentMinDamage / qualityMultiplier;
+    const baseMaxDamage = totalCurrentMaxDamage / qualityMultiplier;
 
-    // Текущий DPS с учётом качества
-    const currentAverageDamage = (currentMinDamage + currentMaxDamage) / 2;
+    // Текущий DPS с учётом качества и элементального урона
+    const currentAverageDamage =
+      (totalCurrentMinDamage + totalCurrentMaxDamage) / 2;
     const currentDps = currentAverageDamage * attackSpeed;
 
     // DPS при максимальном качестве (+20%)
     const maxQualityMultiplier = 1.2;
     const maxMinDamage = baseMinDamage * maxQualityMultiplier;
     const maxMaxDamage = baseMaxDamage * maxQualityMultiplier;
-    const maxAverageDamage = (maxMinDamage + maxMaxDamage) / 2;
+    const maxAverageDamage =
+      (maxMinDamage + maxMaxDamage) / 2 +
+      (elementalMinDamage + elementalMaxDamage) / 2;
     const maxDps = maxAverageDamage * attackSpeed;
 
     return {
       baseMinDamage: parseFloat(baseMinDamage.toFixed(2)),
       baseMaxDamage: parseFloat(baseMaxDamage.toFixed(2)),
+      elementalMinDamage,
+      elementalMaxDamage,
       attackSpeed,
       quality,
-      currentDps: parseFloat(currentDps.toFixed(2)), // Текущий DPS
-      maxDps: parseFloat(maxDps.toFixed(2)), // DPS при максимальном качестве
+      currentDps: parseFloat(currentDps.toFixed(2)),
+      maxDps: parseFloat(maxDps.toFixed(2)),
     };
   }
 
-  return null; // В случае, если данные не найдены
+  return null;
 }
 
 function App() {
