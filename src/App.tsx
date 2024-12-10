@@ -59,46 +59,62 @@ function App() {
   const [err, setErr] = createSignal("");
 
   return (
-    <div class="grid place-items-center h-screen w-screen bg-slate-800 text-slate-100 content-center">
-      <h1 class="text-4xl font-bold mb-auto text-sky-400">POE DPS</h1>
-
-      <div class="w-full max-w-2xl p-4">
-        <p class="my-2 text-lg text-slate-300">
-          Press CTRL + C on the weapon in-game to copy its data, then paste it
-          here.
+    <div
+      class="h-screen w-screen bg-slate-800 grid grid-rows-2"
+      style={{
+        "grid-template-rows": "auto 100px",
+      }}
+    >
+      <div class="grid place-items-center  text-slate-100 content-center">
+        <h1 class="text-4xl font-bold mb-auto text-sky-400">
+          Path of Exile 2 DPS Calculator
+        </h1>
+        <p class="mb-8 text-slate-300">
+          Quickly and easily calculate DPS for Path of Exile 1/2 (PoE 1/2).
         </p>
-        <textarea
-          placeholder="Enter weapon data"
-          class="w-full h-64 p-4 border-2 border-slate-600 rounded-md resize-none bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-400"
-          onInput={(e) => {
-            const input = e.currentTarget.value;
-            const weaponData = parseWeaponData(input);
-            if (weaponData) {
-              console.log(weaponData);
-              setWD(weaponData);
-              setErr("");
-            } else {
-              setErr("Invalid weapon data");
-              setWD(null);
-            }
-          }}
-        />
-        {err() && <p class="text-red-400">{err()}</p>}
+        <div class="w-full max-w-2xl p-4">
+          <p class="my-2 text-lg text-slate-300">
+            Press CTRL + C on the weapon in-game to copy its data, then paste it
+            here.
+          </p>
+          <textarea
+            placeholder="Enter weapon data"
+            class="w-full h-64 p-4 border-2 border-slate-600 rounded-md resize-none bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-400"
+            onInput={(e) => {
+              const input = e.currentTarget.value;
+              const weaponData = parseWeaponData(input);
+              if (weaponData) {
+                console.log(weaponData);
+                setWD(weaponData);
+                setErr("");
+              } else {
+                setErr("Invalid weapon data");
+                setWD(null);
+              }
+            }}
+          />
+          {err() && <p class="text-red-400">{err()}</p>}
+        </div>
+
+        {weaponData() && (
+          <p class="text-2xl">
+            Current DPS:{" "}
+            <span class="text-amber-400">{weaponData()?.currentDps}</span>
+          </p>
+        )}
+
+        {weaponData() && (
+          <p class="text-2xl">
+            Max DPS on 20% Quality:{" "}
+            <span class="text-lime-400">~{weaponData()?.maxDps}</span>
+          </p>
+        )}
       </div>
-
-      {weaponData() && (
-        <p class="text-2xl">
-          Current DPS:{" "}
-          <span class="text-amber-400">{weaponData()?.currentDps}</span>
-        </p>
-      )}
-
-      {weaponData() && (
-        <p class="text-2xl">
-          Max DPS on 20% Quality:{" "}
-          <span class="text-lime-400">~{weaponData()?.maxDps}</span>
-        </p>
-      )}
+      <footer class="text-center text-sm text-sky-400  border-sky-400 p-4 border-t">
+        This site is not affiliated with or endorsed by Grinding Gear Games.
+        Path of Exile and Path of Exile 2 are trademarks or registered
+        trademarks of Grinding Gear Games.
+      </footer>
     </div>
   );
 }
