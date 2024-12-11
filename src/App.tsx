@@ -3,8 +3,7 @@ import { createSignal } from "solid-js";
 interface WeaponData {
   baseMinDamage: number;
   baseMaxDamage: number;
-  elementalMinDamage: number;
-  elementalMaxDamage: number;
+
   attackSpeed: number;
   quality: number;
   currentDps: number;
@@ -12,44 +11,41 @@ interface WeaponData {
 }
 
 function parseWeaponData(input: string): WeaponData | null {
-  const damagePattern = /Physical Damage:\s*(\d+)-(\d+)/;
-  const elementalPattern =
-    /Elemental Damage:\s*((?:\d+-\d+(?:\s*\([^)]+\))?(?:,\s*)?)+)/;
+  // const physicalDamagePattern = /Physical Damage:\s*(\d+)-(\d+)/;
+  const damageTypesPattern =
+    /((?:\w+ Damage):\s*(?:\d+-\d+(?:\s*\([^)]+\))?(?:,\s*)?)+)/g;
   const attackSpeedPattern = /Attacks per Second:\s*([\d.]+)/;
   const qualityPattern = /Quality:\s*\+(\d+)%/;
 
-  const damageMatch = input.match(damagePattern);
-  const elementalMatch = input.match(elementalPattern);
+  // const physicalMatch = input.match(physicalDamagePattern);
   const attackSpeedMatch = input.match(attackSpeedPattern);
   const qualityMatch = input.match(qualityPattern);
 
-  if (damageMatch && attackSpeedMatch) {
-    const currentMinDamage = parseInt(damageMatch[1], 10);
-    const currentMaxDamage = parseInt(damageMatch[2], 10);
+  if (attackSpeedMatch) {
+    // const currentMinDamage = parseInt(physicalMatch[1], 10);
+    // const currentMaxDamage = parseInt(physicalMatch[2], 10);
     const attackSpeed = parseFloat(attackSpeedMatch[1]);
     const quality = qualityMatch ? parseInt(qualityMatch[1], 10) : 0;
 
-    // Парсинг элементального урона
-    let elementalMinDamage = 0;
-    let elementalMaxDamage = 0;
+    // Парсинг всех типов дополнительного урона
+    let totalCurrentMinDamage = 0;
+    let totalCurrentMaxDamage = 0;
 
-    if (elementalMatch) {
-      const elementalDamages = elementalMatch[1]
-        .split(",")
-        .map((s) => s.trim());
-      elementalDamages.forEach((damage) => {
-        const [min, max] = damage
-          .match(/(\d+)-(\d+)/)!
-          .slice(1, 3)
-          .map(Number);
-        elementalMinDamage += min;
-        elementalMaxDamage += max;
-      });
+    const damageTypeMatches = input.matchAll(damageTypesPattern);
+    for (const match of damageTypeMatches) {
+      const damageLine = match[1];
+      const damageValues = damageLine.matchAll(/(\d+)-(\d+)/g);
+      for (const damageValue of damageValues) {
+        const min = parseInt(damageValue[1], 10);
+        const max = parseInt(damageValue[2], 10);
+        totalCurrentMinDamage += min;
+        totalCurrentMaxDamage += max;
+      }
     }
 
     // Общий урон (физический + элементальный)
-    const totalCurrentMinDamage = currentMinDamage + elementalMinDamage;
-    const totalCurrentMaxDamage = currentMaxDamage + elementalMaxDamage;
+    // const totalCurrentMinDamage = currentMinDamage + elementalMinDamage;
+    // const totalCurrentMaxDamage = currentMaxDamage + elementalMaxDamage;
 
     // Убираем влияние качества, чтобы найти базовый урон
     const qualityMultiplier = 1 + quality / 100;
@@ -65,16 +61,12 @@ function parseWeaponData(input: string): WeaponData | null {
     const maxQualityMultiplier = 1.2;
     const maxMinDamage = baseMinDamage * maxQualityMultiplier;
     const maxMaxDamage = baseMaxDamage * maxQualityMultiplier;
-    const maxAverageDamage =
-      (maxMinDamage + maxMaxDamage) / 2 +
-      (elementalMinDamage + elementalMaxDamage) / 2;
+    const maxAverageDamage = (maxMinDamage + maxMaxDamage) / 2;
     const maxDps = maxAverageDamage * attackSpeed;
 
     return {
       baseMinDamage: parseFloat(baseMinDamage.toFixed(2)),
       baseMaxDamage: parseFloat(baseMaxDamage.toFixed(2)),
-      elementalMinDamage,
-      elementalMaxDamage,
       attackSpeed,
       quality,
       currentDps: parseFloat(currentDps.toFixed(2)),
